@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreshTech Careers | South India & Remote IT Jobs</title>
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="[suspicious link removed]"></script>
+  <link rel="preconnect" href="[suspicious link removed]">
+  <link rel="preconnect" href="[suspicious link removed]" crossorigin>
+  <link href="[suspicious link removed]" rel="stylesheet">
+  <!-- PapaParse for parsing Google Sheets CSV live -->
+  <script src="[suspicious link removed]"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- Navigation Bar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-200">
+          💼
+        </div>
+        <div>
+          <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">FreshTech Jobs</span>
+          <span class="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-full">0-YOE & High-CTC</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="job-count-badge" class="text-xs sm:text-sm font-medium bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200">
+          Loading jobs...
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero & Search Section -->
+  <section class="bg-gradient-to-b from-indigo-50/60 via-slate-50 to-slate-50 py-10 px-4 sm:px-6 border-b border-slate-200/60">
+    <div class="max-w-5xl mx-auto text-center space-y-4">
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900">
+        Verified Fresher IT Jobs in <span class="text-indigo-600">South India & Remote</span>
+      </h1>
+      <p class="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto">
+        Direct application links with zero agency spam. Filtered strictly for 0 experience and competitive compensation.
+      </p>
+
+      <!-- Search & Filters Container -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-xl shadow-indigo-100/50 border border-slate-200/80 mt-6 text-left grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <!-- Search Keywords -->
+        <div class="sm:col-span-5 relative">
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Search role, company, or skills (e.g. Java, AI, React)..." 
+            class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+          />
+          <svg class="w-5 h-5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+
+        <!-- Location Filter -->
+        <div class="sm:col-span-4">
+          <select id="location-select" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-white">
+            <option value="all">All Locations (South India & Remote)</option>
+            <option value="Bengaluru">Bengaluru / Bangalore</option>
+            <option value="Hyderabad">Hyderabad</option>
+            <option value="Chennai">Chennai</option>
+            <option value="Visakhapatnam">Visakhapatnam</option>
+            <option value="Remote">Remote</option>
+          </select>
+        </div>
+
+        <!-- Sorting -->
+        <div class="sm:col-span-3">
+          <select id="sort-select" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-700 bg-white">
+            <option value="latest">Sort: Newest First</option>
+            <option value="company">Sort: Company A-Z</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Job Feed Container -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+    <!-- Active Filters Summary -->
+    <div id="results-meta" class="flex items-center justify-between mb-6 text-sm text-slate-500 font-medium">
+      <span>Showing active listings</span>
+    </div>
+
+    <!-- Cards Grid -->
+    <div id="jobs-container" class="space-y-4">
+      <!-- Loading Placeholder -->
+      <div class="p-12 text-center text-slate-400">Loading listings...</div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+    <p>Auto-updated from live hiring pipelines. Direct ATS redirect guarantees authentic applications.</p>
+  </footer>
+
+  <!-- Script: Data Fetching, Filtering & Rendering -->
+  <script>
+    // ==========================================
+    // 1. CONFIGURATION: PASTE YOUR PUBLISHED CSV HERE
+    // ==========================================
+    // Replace with your Google Sheet Published CSV Link:
+    const GOOGLE_SHEET_CSV_URL = "YOUR_GOOGLE_SHEET_CSV_URL_HERE";
+
+    // Fallback data loaded if your sheet URL is not configured yet
+    const FALLBACK_JOBS = [
+      {
+        role: "Software Developer / Associate Consultant",
+        company: "eLitmus Evaluation Pvt Ltd",
+        location: "Bengaluru, Karnataka",
+        ctc: "₹12,00,000 (Stipend ₹29K/mo)",
+        description: "Design, optimize, and build robust software products as part of an evaluation and product engineering team focusing on algorithmic logic.",
+        eligibility: "Freshers (2026 Batch)",
+        skills: "Algorithmic logic design, software optimization, product engineering",
+        link: "https://www.elitmus.com/jobs/33259-elitmus-evaluation-software-developer-associate-consultant-bangalore"
+      },
+      {
+        role: "Software Engineer Intern",
+        company: "Stripe",
+        location: "Bengaluru, Karnataka",
+        ctc: "₹52,00,000 - ₹58,30,000",
+        description: "Design and develop production-ready APIs, distributed systems, and backend services operating at global payment infrastructure scale.",
+        eligibility: "Final-year students (Batch 2026) in CS, Mathematics, or Data Science",
+        skills: "Java, Ruby, JavaScript, Scala, Go, Distributed Systems",
+        link: "https://stripe.com/jobs/listing/software-engineer-intern/8031833"
+      },
+      {
+        role: "SDET (Software Development Engineer in Test)",
+        company: "YugaByte Software",
+        location: "Bengaluru, Karnataka",
+        ctc: "₹56,00,000+ FTE (Stipend ₹80K/mo)",
+        description: "Develop automated testing frameworks and validate relational distributed SQL database architecture and system performance.",
+        eligibility: "Freshers / Batch 2026 graduates",
+        skills: "Relational database theory, C++, Python, Java, test case optimization",
+        link: "https://www.elitmus.com/jobs/33269-yugabyte-software-sdet-software-development-engineer-in-test-bangalore-pune"
+      },
+      {
+        role: "Trainee Software Engineer",
+        company: "Sails Software Inc",
+        location: "Visakhapatnam, Andhra Pradesh",
+        ctc: "₹4,50,000 - ₹8,00,000",
+        description: "Build enterprise software and AI document intelligence systems under a structured internship-to-hire program.",
+        eligibility: "2026 Batch B.Tech CSE/IT (75% aggregate)",
+        skills: "Java, Python, Big Data Engineering, Automated QA, Microservices",
+        link: "https://sailssoftware.freshteam.com/jobs"
+      },
+      {
+        role: "Associate Software Engineer",
+        company: "Fission Labs",
+        location: "Hyderabad, Telangana",
+        ctc: "₹5,50,000 - ₹6,50,000",
+        description: "Build full-stack enterprise web applications and RESTful backend APIs with relational and NoSQL databases.",
+        eligibility: "B.E. / B.Tech (2026 Batch from IIT/NIT)",
+        skills: "Java, Node.js, Spring Boot, Python, PostgreSQL, MongoDB, RESTful APIs",
+        link: "https://www.elitmus.com/jobs/33274-fission-labs-associate-software-engineer-hyderabad"
+      },
+      {
+        role: "Product Developer (Star Hire)",
+        company: "Lumel Technologies",
+        location: "Chennai, Tamil Nadu",
+        ctc: "₹5,00,000 - ₹7,00,000",
+        description: "Work closely with cross-functional teams to design, develop, test, and maintain modern BI, web, and enterprise SaaS applications.",
+        eligibility: "B.E. / B.Tech (CS or IT, 2026 Batch)",
+        skills: "C#, React, .NET Core, TypeScript, SQL architectures",
+        link: "https://lumel.keka.com/careers/jobdetails/117757"
+      }
+    ];
+
+    let allJobs = [];
+
+    // ==========================================
+    // 2. FETCH DATA FROM GOOGLE SHEETS
+    // ==========================================
+    async function init() {
+      if (!GOOGLE_SHEET_CSV_URL || GOOGLE_SHEET_CSV_URL.includes("YOUR_GOOGLE_SHEET_CSV")) {
+        console.warn("Using sample jobs data. Add your published Google Sheet CSV link to sync live!");
+        allJobs = FALLBACK_JOBS;
+        renderJobs(allJobs);
+        return;
+      }
+
+      Papa.parse(GOOGLE_SHEET_CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const parsed = results.data.map(row => ({
+            role: row["Job Role"] || row["role"] || "Software Engineer",
+            company: row["Company"] || row["company"] || "Tech Company",
+            location: row["Location"] || row["location"] || "South India",
+            ctc: row["CTC"] || row["ctc"] || "Competitive",
+            description: row["Job Description"] || row["description"] || "No description provided.",
+            eligibility: row["Eligibility"] || row["eligibility"] || "Freshers (0 YOE)",
+            skills: row["Skills Required"] || row["skills"] || "Software Engineering",
+            link: row["Apply Link"] || row["link"] || "#"
+          }));
+
+          allJobs = parsed.length > 0 ? parsed : FALLBACK_JOBS;
+          renderJobs(allJobs);
+        },
+        error: function(err) {
+          console.error("Error fetching Google Sheet CSV:", err);
+          allJobs = FALLBACK_JOBS;
+          renderJobs(allJobs);
+        }
+      });
+    }
+
+    // ==========================================
+    // 3. RENDER FUNCTION
+    // ==========================================
+    function renderJobs(jobs) {
+      const container = document.getElementById("jobs-container");
+      const badge = document.getElementById("job-count-badge");
+      const meta = document.getElementById("results-meta");
+
+      badge.textContent = `${jobs.length} Active Positions`;
+      meta.textContent = `Showing ${jobs.length} open position${jobs.length === 1 ? '' : 's'}`;
+
+      if (jobs.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <p class="text-slate-500 font-medium">No jobs match your current search or location filters.</p>
+            <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-100 transition">
+              Reset Filters
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = jobs.map(job => {
+        // Parse skills into pills
+        const skillsList = job.skills.split(/[,|/]/).map(s => s.trim()).filter(Boolean);
+
+        return `
+          <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div class="space-y-2.5 flex-1">
+              <!-- Top Badges Row -->
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
+                  📍 ${escapeHTML(job.location)}
+                </span>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
+                  💰 ${escapeHTML(job.ctc)}
+                </span>
+                <span class="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                  🎓 ${escapeHTML(job.eligibility)}
+                </span>
+              </div>
+
+              <!-- Title & Company -->
+              <div>
+                <h3 class="text-lg sm:text-xl font-bold text-slate-900">${escapeHTML(job.role)}</h3>
+                <p class="text-sm font-semibold text-slate-500">${escapeHTML(job.company)}</p>
+              </div>
+
+              <!-- Description -->
+              <p class="text-sm text-slate-600 leading-relaxed max-w-3xl line-clamp-2">
+                ${escapeHTML(job.description)}
+              </p>
+
+              <!-- Skills Tags -->
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                ${skillsList.slice(0, 5).map(skill => `
+                  <span class="text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">
+                    ${escapeHTML(skill)}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Apply Button -->
+            <div class="pt-3 md:pt-0 flex md:flex-col items-center justify-end shrink-0">
+              <a 
+                href="${escapeHTML(job.link)}" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] shadow-md shadow-indigo-100 transition-all text-center"
+              >
+                Apply Now
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // 4. FILTERING & SEARCH LOGIC
+    // ==========================================
+    function applyFilters() {
+      const query = document.getElementById("search-input").value.toLowerCase();
+      const loc = document.getElementById("location-select").value.toLowerCase();
+      const sortBy = document.getElementById("sort-select").value;
+
+      let filtered = allJobs.filter(job => {
+        const matchesQuery = 
+          job.role.toLowerCase().includes(query) ||
+          job.company.toLowerCase().includes(query) ||
+          job.skills.toLowerCase().includes(query) ||
+          job.description.toLowerCase().includes(query);
+
+        const matchesLoc = (loc === "all") || job.location.toLowerCase().includes(loc);
+
+        return matchesQuery && matchesLoc;
+      });
+
+      if (sortBy === "company") {
+        filtered.sort((a, b) => a.company.localeCompare(b.company));
+      }
+
+      renderJobs(filtered);
+    }
+
+    function resetFilters() {
+      document.getElementById("search-input").value = "";
+      document.getElementById("location-select").value = "all";
+      document.getElementById("sort-select").value = "latest";
+      renderJobs(allJobs);
+    }
+
+    function escapeHTML(str) {
+      if (!str) return "";
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    // Event Listeners
+    document.getElementById("search-input").addEventListener("input", applyFilters);
+    document.getElementById("location-select").addEventListener("change", applyFilters);
+    document.getElementById("sort-select").addEventListener("change", applyFilters);
+
+    // Initialize on page load
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
